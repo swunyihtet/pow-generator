@@ -89,7 +89,11 @@ const ProjectSelector = () => {
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-github-repos");
+      const { data, error } = await supabase.functions.invoke("sync-github-repos", {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      });
       if (error) throw error;
       
       toast.success("GitHub synchronization complete", {

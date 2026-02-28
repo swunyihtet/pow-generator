@@ -20,19 +20,24 @@ import {
   AlertTriangle,
   LayoutGrid,
   FileUser,
-  History
+  History,
+  ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 
 const Admin = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [username, setUsername] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Check session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session) {
+        fetchUsername(session.user.id);
+      }
       setLoading(false);
       if (!session) {
         toast.error("Unauthorized Access Detected", {
@@ -43,10 +48,24 @@ const Admin = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session) {
+        fetchUsername(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUsername = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", userId)
+      .single();
+    if (data?.username) {
+      setUsername(data.username);
+    }
+  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -159,6 +178,16 @@ const Admin = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {username && (
+              <Button 
+                onClick={() => window.open(`/${username}`, '_blank')}
+                variant="outline"
+                className="hidden sm:flex border-primary/30 hover:bg-primary/10 text-primary font-bold uppercase tracking-widest text-[10px] h-10 rounded-xl"
+              >
+                <ExternalLink className="mr-2 h-3 w-3" />
+                View Live Nexus
+              </Button>
+            )}
             <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/5 mr-4">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-white/70 truncate max-w-[150px]">

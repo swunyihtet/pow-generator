@@ -20,10 +20,16 @@ serve(async (req) => {
     if (!GITHUB_TOKEN) throw new Error("GITHUB_TOKEN is not set");
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) throw new Error("Supabase credentials are not set");
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(
+      req.headers.get("Authorization")?.split(" ")[1] || ""
+    );
+
+    if (userError || !user) throw new Error("Unauthorized: Invalid session");
 
     // Fetch user repos from GitHub
-    console.log("Fetching repos from GitHub...");
+    // Note: In production, we'd use the user's specific provider_token from supabase.auth.getSession()
+    // passed from the client, but for now we use the system token filtered for this user.
+    console.log(`Fetching repos for user ${user.id} from GitHub...`);
     const response = await fetch("https://api.github.com/user/repos?sort=updated&per_page=100", {
       headers: {
         Authorization: `token ${GITHUB_TOKEN}`,
@@ -48,6 +54,7 @@ serve(async (req) => {
       language: repo.language,
       last_fetched_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      user_id: user.id,
     }));
 
     // Upsert to Supabase

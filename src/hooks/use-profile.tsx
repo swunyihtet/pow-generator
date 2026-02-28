@@ -36,11 +36,14 @@ export interface Education {
   link: string | null;
 }
 
+import { useProjects } from "./use-projects";
+
 export function useProfile(username?: string) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [education, setEducation] = useState<Education[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { projects: githubProjects } = useProjects(profile?.id);
 
   useEffect(() => {
     async function fetchProfileData() {
@@ -91,5 +94,14 @@ export function useProfile(username?: string) {
     fetchProfileData();
   }, [username]);
 
-  return { profile, experiences, education, isLoading };
+  const experienceYears = experiences.length > 0 
+    ? Math.max(0, new Date().getFullYear() - Math.min(...experiences.map(e => {
+        const year = parseInt(e.period.split('-')[0].trim());
+        return isNaN(year) ? new Date().getFullYear() : year;
+      })))
+    : 0;
+
+  const missionCount = experiences.length + (githubProjects?.filter(p => p.is_featured).length || 0);
+
+  return { profile, experiences, education, isLoading, experienceYears, missionCount };
 }

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,7 +20,23 @@ import { useProfile } from "@/hooks/use-profile";
 
 const Index = () => {
   const { username } = useParams();
-  const { profile, experiences: dbExperiences, education: dbEducation, isLoading: profileLoading } = useProfile(username);
+  const navigate = useNavigate();
+  const { profile, experiences: dbExperiences, education: dbEducation, isLoading: profileLoading, experienceYears, missionCount } = useProfile(username);
+  
+  useEffect(() => {
+    if (!profileLoading && !profile && username) {
+      toast({
+        title: "Entity Not Found",
+        description: "The requested profile does not exist in the Nexus archive.",
+        variant: "destructive",
+      });
+      navigate("/");
+    }
+    if (profile?.full_name) {
+      document.title = `${profile.full_name} | Proof of Work`;
+    }
+  }, [profile, profileLoading, username, navigate]);
+
   const [activeTab, setActiveTab] = useState("home");
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -248,15 +264,17 @@ const Index = () => {
                     <Sparkles className="h-5 w-5 mr-2" />
                     Initialize Protocol
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    onClick={handleDownloadCV}
-                    className="px-8 py-6 text-lg font-bold border-secondary/50 hover:border-secondary transition-all duration-300 hover:scale-105 hover:bg-secondary/10 rounded-2xl uppercase tracking-widest"
-                  >
-                    <Download className="h-5 w-5 mr-2" />
-                    Extract Data (CV)
-                  </Button>
+                  {profile?.cv_url && (
+                    <Button 
+                      variant="outline" 
+                      size="lg"
+                      onClick={handleDownloadCV}
+                      className="px-8 py-6 text-lg font-bold border-secondary/50 hover:border-secondary transition-all duration-300 hover:scale-105 hover:bg-secondary/10 rounded-2xl uppercase tracking-widest"
+                    >
+                      <Download className="h-5 w-5 mr-2" />
+                      Extract Data (CV)
+                    </Button>
+                  )}
                 </div>
 
                 {/* Social Links */}
@@ -297,7 +315,7 @@ const Index = () => {
                   >
                     <Briefcase className="h-10 w-10 text-primary" />
                   </motion.div>
-                  <h3 className="text-4xl font-black mb-2 text-gradient tracking-tighter">4+ YEARS</h3>
+                  <h3 className="text-4xl font-black mb-2 text-gradient tracking-tighter">{experienceYears}+ YEARS</h3>
                   <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Project Mastery</p>
                 </CardContent>
               </Card>
@@ -309,8 +327,8 @@ const Index = () => {
                   >
                     <Trophy className="h-10 w-10 text-secondary" />
                   </motion.div>
-                  <h3 className="text-4xl font-black mb-2 text-gradient tracking-tighter">25+ MISSIONS</h3>
-                  <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Success Rate: 100%</p>
+                  <h3 className="text-4xl font-black mb-2 text-gradient tracking-tighter">{missionCount}+ MISSIONS</h3>
+                  <p className="text-muted-foreground font-bold uppercase tracking-widest text-xs">Verified Archive</p>
                 </CardContent>
               </Card>
               <Card className="card-modern hover-lift text-center group relative overflow-hidden">
