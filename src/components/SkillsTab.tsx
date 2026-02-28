@@ -57,9 +57,13 @@ const baseModules = [
   },
 ];
 
-const SkillsTab = () => {
-  const [overclock, setOverclock] = useState(false);
+const SkillsTab = ({ defaultOverclock = false }: { defaultOverclock?: boolean }) => {
+  const [overclock, setOverclock] = useState(defaultOverclock);
   const { projects } = useProjects();
+
+  useEffect(() => {
+    setOverclock(defaultOverclock);
+  }, [defaultOverclock]);
   const [dynamicTech, setDynamicTech] = useState<string[]>([]);
 
   useEffect(() => {

@@ -13,7 +13,7 @@ export interface Project {
   display_order: number;
 }
 
-export function useProjects() {
+export function useProjects(userId?: string) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -22,14 +22,17 @@ export function useProjects() {
     async function fetchProjects() {
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
+        let query = supabase
           .from("projects")
           .select("*")
           .order("display_order", { ascending: true })
           .order("stargazers_count", { ascending: false });
 
-        if (error) throw error;
-        setProjects(data || []);
+        if (userId) {
+          query = query.eq("user_id", userId);
+        }
+
+        const { data, error } = await query;
       } catch (err: any) {
         console.error("Error fetching projects:", err);
         setError(err);

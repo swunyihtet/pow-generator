@@ -15,8 +15,8 @@ interface Project {
   details?: string;
 }
 
-const MissionArchive = () => {
-  const { projects: githubProjects, isLoading } = useProjects();
+const MissionArchive = ({ userId }: { userId?: string }) => {
+  const { projects: githubProjects, isLoading } = useProjects(userId);
 
   const staticProjects: Project[] = [
     {
@@ -27,18 +27,27 @@ const MissionArchive = () => {
       technologies: ["VMware Tanzu", "Java", "Oracle", "Cloud Infrastructure"],
       details: "Orchestrated the migration of core banking services ensuring zero downtime and strict regulatory compliance. Coordinated across DBMS, Network, and Security functions."
     },
-    // ... rest of the curation ...
+    {
+      title: "ERP Customization & Implementation",
+      company: "SYSTEMATiC Co., Ltd",
+      description: "Full-cycle delivery of custom ERP solutions for enterprise clients.",
+      type: "professional",
+      technologies: ["ERP", "Project Coordination", "Business Analysis"],
+      details: "Led implementation for G&G, MIB, and Lucky Diamond Myanmar. Streamlined business processes and enhanced operational efficiency."
+    }
   ];
 
   // Map Supabase projects to UI structure
-  const dynamicProjects: Project[] = githubProjects.map(gp => ({
-    title: gp.name,
-    description: gp.description || "No description provided.",
-    type: "personal", // Defaulting dynamic GitHub repos to personal for now
-    technologies: gp.language ? [gp.language] : [],
-    link: gp.html_url,
-    details: `GitHub Stats: ${gp.stargazers_count} stars. This project was automatically synced from GitHub.`
-  }));
+  const dynamicProjects: Project[] = githubProjects
+    .filter(gp => gp.is_featured)
+    .map(gp => ({
+      title: gp.name,
+      description: gp.description || "No description provided.",
+      type: "personal",
+      technologies: gp.language ? [gp.language] : [],
+      link: gp.html_url,
+      details: `GitHub Stats: ${gp.stargazers_count} stars. Verified repository from developer profile.`
+    }));
 
   const allProjects = [...staticProjects, ...dynamicProjects];
 

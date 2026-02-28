@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +16,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Download, MapPin, Calendar, Building, GraduationCap, Mail, Phone, Github, Linkedin, Twitter, ExternalLink, Briefcase, Users, Trophy, Sparkles, Code, Server, Database, Cloud, Settings } from "lucide-react";
 
 
+import { useProfile } from "@/hooks/use-profile";
+
 const Index = () => {
+  const { username } = useParams();
+  const { profile, experiences: dbExperiences, education: dbEducation, isLoading: profileLoading } = useProfile(username);
   const [activeTab, setActiveTab] = useState("home");
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -25,232 +30,37 @@ const Index = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
+  const isOverclockDefault = profile?.theme_config?.overclock === true;
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center space-y-6">
+        <div className="relative">
+          <div className="h-24 w-24 rounded-full border-t-2 border-primary animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Sparkles className="h-8 w-8 text-primary animate-pulse" />
+          </div>
+        </div>
+        <p className="font-mono text-primary text-xs uppercase tracking-[0.3em] animate-pulse">Initializing Nexus...</p>
+      </div>
+    );
+  }
+
   const handleHireMe = () => {
     setActiveTab("contact");
   };
 
   const handleDownloadCV = () => {
-  // Google Drive direct download link
-  const link = document.createElement('a');
-  link.href = 'https://drive.google.com/uc?export=download&id=1M-5zqGhs7VKYDyBYnlK-IAhHKSuwvUYX'; // your file ID
-  link.download = 'Swun_Yi_Htet_CV.pdf'; // suggested filename
-  document.body.appendChild(link); // optional, ensures it works in some browsers
-  link.click();
-  document.body.removeChild(link); // cleanup
-};
-
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      // 1. Persist to Supabase Table
-      const { error: dbError } = await supabase
-        .from('portfolio_1')
-        .insert([
-          { 
-            name: contactForm.name, 
-            email: contactForm.email, 
-            message: contactForm.message 
-          }
-        ]);
-
-      if (dbError) throw dbError;
-
-      // 2. Notify Parvix (AI Power Genius)
-      const messageText = `🚀 NEW PORTFOLIO MESSAGE:\n\n👤 Name: ${contactForm.name}\n📧 Email: ${contactForm.email}\n📝 Message: ${contactForm.message}`;
-      
-      try {
-        await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: messageText })
-        });
-      } catch (notifyError) {
-        console.warn('Notification failed, but data was saved:', notifyError);
-      }
-
-      toast({
-        title: "Transmission successful!",
-        description: "Your data packet has been received and stored. I will respond shortly.",
-      });
-
-      setContactForm({ name: "", email: "", message: "" });
-    } catch (error: any) {
-      console.error('Transmission Error:', error);
-      toast({
-        title: "Uplink Failed",
-        description: "There was an error saving your message. Please try again or contact me directly.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    if (!profile?.cv_url) return;
+    window.open(profile.cv_url, '_blank');
   };
 
   const socialLinks = [
-    { icon: Linkedin, href: "https://linkedin.com/in/swun-yi-htet/", label: "LinkedIn" },
-    { icon: Github, href: "https://github.com/swunyihtet", label: "GitHub" },
-    { icon: Twitter, href: "https://twitter.com/swanyihtat", label: "Twitter" },
-    { icon: Mail, href: "mailto:swunyihtet@gmail.com", label: "Email" },
+    { icon: Linkedin, href: profile?.social_links?.linkedin || "#", label: "LinkedIn" },
+    { icon: Github, href: profile?.social_links?.github || "#", label: "GitHub" },
+    { icon: Twitter, href: profile?.social_links?.twitter || "#", label: "Twitter" },
+    { icon: Mail, href: `mailto:${profile?.email || ""}`, label: "Email" },
   ];
-
-  const experiences = [
-  {
-    company: "KBZ Head-Office, Technology Function, PMO",
-    position: "Project Coordinator",
-    period: "May 2024 - Present",
-    description: [
-      "Prepare project charters, business requirement documents, and project contracts in line with business and technical needs.",
-      "Lead and coordinate infrastructure projects such as Core Banking System Migration and SAP Migration.",
-      "Collaborate with DBMS, Data Center & Cloud, Network, SOC, and other cross-functional teams.",
-      "Facilitate communication between business and technical teams, translating requirements into actionable plans.",
-      "Ensure alignment with project goals through UAT execution and infrastructure readiness."
-    ]
-  },
-  {
-    company: "SYSTEMATiC Co., Ltd, Business Development Team",
-    position: "Project Coordinator",
-    period: "Feb 2023 - May 2024",
-    description: [
-      "Coordinate full-cycle delivery of custom software projects (HR, ERP, POS) from initiation to completion.",
-      "Ensure alignment with business requirements and maintain high client satisfaction.",
-      "Lead ERP customization and implementation for clients including G&G, MIB, and Lucky Diamond Myanmar.",
-      "Direct public website development projects such as Myanmar Metro Bank’s official site.",
-      "Oversee creation of a Hospital Management System for San Thaw Dar Eye Clinic, improving efficiency and service quality."
-    ]
-  },
-  {
-    company: "Partner Associates Int'l Co., Ltd, PMO",
-    position: "Project Coordinator",
-    period: "Aug 2022 - Mar 2023",
-    description: [
-      "Collaborate with system engineers, software developers, infrastructure and network engineers, and IT operations to support project delivery.",
-      "Manage project administration tasks including tool administration, facilities coordination, and project communication.",
-      "Oversee ISO 9001:2015 & ISO 27001:2022 implementation and auditing processes."
-    ]
-  },
-  {
-    company: "Global Technology Companies Group (GlobalNet)",
-    position: "Internee",
-    period: "Dec 2018 - Feb 2019",
-    description: [
-      "Monitor network traffic and analyze data center conditions.",
-      "Assist enterprise clients by scheduling appointments, introducing services, and maintaining client relationships."
-    ]
-  }
-];
-
-
-const education = [
-  {
-    degree: "Bachelor of Computer Engineering & Information Technology",
-    institution: "Yangon Technological University (COE)",
-    year: "2014 - 2019",
-    location: "Yangon, Myanmar",
-    description: "Focused on computer engineering principles, information technology systems, and software development.",
-    gpa: "4.1/5.0",
-    status: "Graduated",
-    achievements: [
-      "Completed final year project on computer engineering & IT systems",
-      "Strong foundation in both hardware and software integration"
-    ]
-  },
-  {
-  degree: "Project Management Professional (PMP) Exam Prep",
-  institution: "SAYA MYO’S PM SCHOOL",
-  year: "Aug 2025 - Sep 2025",
-  location: "Yangon, Myanmar",
-  description: "Completed an intensive PMP preparation course focused on project planning, budgeting, and strategic decision-making aligned with PMI standards.",
-  status: "Completed",
-  achievements: [
-    "Gained strong understanding of key project management processes and frameworks.",
-    "Applied budgeting and cost-control methods to practical project scenarios.",
-    "Enhanced leadership and analytical skills for effective project coordination."
-  ]
-},
-  {
-    degree: "Financial Management Course",
-    institution: "Strategy First Institute",
-    year: "2016",
-    location: "Yangon, Myanmar",
-    description: "Covered core financial planning, budgeting, and strategic decision-making skills.",
-    status: "Completed",
-    achievements: [
-      "Built solid understanding of financial planning and control",
-      "Applied budgeting concepts to practical case studies"
-    ]
-  },
-  {
-    degree: "Customer Service Management Course",
-    institution: "PS Business School",
-    year: "2022",
-    location: "Yangon, Myanmar",
-    description: "Specialized in effective customer relationship management and service excellence.",
-    gpa: "Certified",
-    status: "Completed",
-    achievements: [
-      "Trained in handling customer interactions with service excellence",
-      "Enhanced skills in communication and conflict resolution"
-    ]
-  },
-  {
-    degree: "Business Analysis & Process Management",
-    institution: "Coursera",
-    year: "2024",
-    location: "Online",
-    description: "Gained expertise in business process modeling, gap analysis, and requirement gathering.",
-    gpa: "Certified",
-    status: "Completed",
-    achievements: [
-      "Completed professional certification",
-      "Applied business process modeling techniques in case studies"
-    ],
-    link: "https://www.coursera.org/account/accomplishments/records/64GTHBU4QG5W"
-  },
-  {
-    degree: "Career Essentials in Project Management",
-    institution: "Microsoft and LinkedIn",
-    year: "2024",
-    location: "Online",
-    description: "Learned project initiation, planning, execution, and stakeholder management.",
-    gpa: "Certified",
-    status: "Completed",
-    achievements: [
-      "Completed LinkedIn Career Essentials series",
-      "Learned practical project management tools and workflows"
-    ],
-    link: "https://www.linkedin.com/learning/certificates/dca284f42be9b63f5af569698d77baf5b985bf6c17bab411d96b0f55f298a61c"
-  },
-  {
-    degree: "Managing Project Stakeholders",
-    institution: "Project Management Institute",
-    year: "2024",
-    location: "Online",
-    description: "Focused on effective stakeholder engagement and communication strategies.",
-    gpa: "Certified",
-    status: "Completed",
-    achievements: [
-      "Mastered stakeholder communication strategies",
-      "Learned advanced stakeholder analysis techniques"
-    ],
-    link: "https://www.linkedin.com/learning/certificates/e26cf8f48da2dbc4bb48283bf62a353b6c8c005f73315bf00eda4dc186dc49f3"
-  },
-  {
-    degree: "Project Management Foundations",
-    institution: "Project Management Institute",
-    year: "2024",
-    location: "Online",
-    description: "Covered the fundamentals of project management frameworks, tools, and best practices.",
-    gpa: "Certified",
-    status: "Completed",
-    achievements: [
-      "Learned PMBOK-aligned fundamentals",
-      "Built solid understanding of project planning and execution"
-    ],
-    link: "https://www.linkedin.com/learning/certificates/270ba9531254fe31e884ef72408ab31f1f0cf11911cfa5b1a727a6c949581cf0"
-  }
-];
 
   return (
     <div className="min-h-screen relative">
@@ -327,7 +137,7 @@ const education = [
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="text-6xl md:text-8xl font-black mb-6 text-gradient leading-tight tracking-tight uppercase"
             >
-              Swun Yi Htet
+              {profile?.full_name || "Nexus Entity"}
             </motion.h1>
             <motion.div 
               initial={{ opacity: 0, scale: 0.8 }}
@@ -337,7 +147,7 @@ const education = [
             >
               <div className="h-[2px] w-12 bg-gradient-to-r from-transparent to-primary"></div>
               <p className="text-xl md:text-3xl text-foreground font-bold tracking-widest uppercase">
-                AI Tech Visionary & Project Genius
+                {profile?.title || "System Architect"}
               </p>
               <div className="h-[2px] w-12 bg-gradient-to-l from-transparent to-primary"></div>
             </motion.div>
@@ -381,8 +191,8 @@ const education = [
                         transition={{ type: "spring", stiffness: 300 }}
                       >
                         <img 
-                          src="/lovable-uploads/5b781891-c13e-4d98-91df-abd9dfaf6af4.png" 
-                          alt="Swun Yi Htet - Digital Profile"
+                          src={profile?.avatar_url || "/lovable-uploads/5b781891-c13e-4d98-91df-abd9dfaf6af4.png"} 
+                          alt={`${profile?.full_name} - Digital Profile`}
                           className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
                         />
                       </motion.div>
@@ -395,13 +205,13 @@ const education = [
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.8 }}
                     >
-                      <h2 className="text-3xl font-black text-gradient mb-2 tracking-tighter uppercase">Swun Yi Htet</h2>
+                      <h2 className="text-3xl font-black text-gradient mb-2 tracking-tighter uppercase">{profile?.full_name || "Nexus Entity"}</h2>
                       <div className="flex items-center justify-center gap-2 mb-2">
                         <Badge variant="outline" className="border-primary/50 text-primary text-[10px] tracking-widest uppercase">Lead Architect</Badge>
                         <Badge variant="outline" className="border-secondary/50 text-secondary text-[10px] tracking-widest uppercase">AI Specialist</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground font-bold flex items-center justify-center gap-2 italic">
-                        "Engineering the future through intelligence."
+                        "{profile?.tagline || "Engineering the future through intelligence."}"
                       </p>
                     </motion.div>
 
@@ -420,10 +230,10 @@ const education = [
                   <div className="text-lg leading-relaxed text-foreground/80 space-y-6">
                     <p className="border-l-4 border-primary pl-6 py-2 bg-primary/5 rounded-r-xl">
                       Welcome to the nexus of innovation. 
-                      I am <span className="text-primary font-black uppercase tracking-wider">Swun Yi Htet</span>, an <span className="text-secondary font-bold">IT Project Maestro</span> orchestrating the convergence of business strategy and high-tech infrastructure.
+                      I am <span className="text-primary font-black uppercase tracking-wider">{profile?.full_name}</span>, an <span className="text-secondary font-bold">{profile?.title}</span> orchestrating the convergence of business strategy and high-tech infrastructure.
                     </p>
                     <p className="pl-7">
-                      With over 4 years of experience navigating the complexities of large-scale tech migrations and software ecosystems, I specialize in transforming abstract visions into high-performance digital realities.
+                      {profile?.bio || "Navigate the complexities of large-scale tech migrations and software ecosystems, transforming abstract visions into high-performance digital realities."}
                     </p>
                   </div>
                 </div>
@@ -519,7 +329,7 @@ const education = [
           </TabsContent>
 
           
-         {/* Experiences Tab */}
+          {/* Experiences Tab */}
 <TabsContent value="experiences">
   <div className="space-y-12">
     <motion.h2 
@@ -530,9 +340,9 @@ const education = [
       Professional Timeline
     </motion.h2>
     <div className="relative border-l-2 border-primary/30 ml-4 md:ml-8 space-y-12">
-      {experiences.map((exp, index) => (
+      {dbExperiences.map((exp, index) => (
         <motion.div 
-          key={index}
+          key={exp.id}
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
@@ -580,13 +390,18 @@ const education = [
           </Card>
         </motion.div>
       ))}
+      {dbExperiences.length === 0 && (
+        <div className="text-center py-20">
+          <p className="text-muted-foreground font-mono uppercase tracking-widest text-xs">No mission records found in this sector.</p>
+        </div>
+      )}
     </div>
   </div>
 </TabsContent>
 
           {/* Skills Tab */}
           <TabsContent value="skills">
-            <SkillsTab />
+            <SkillsTab defaultOverclock={isOverclockDefault} />
           </TabsContent>
 
           {/* Mission Archive (Projects) Tab */}
@@ -598,28 +413,33 @@ const education = [
                     <TabsContent value="education" className="animate-fade-in">
                       <div className="space-y-8">
                         <div className="text-center space-y-4 mb-12">
-                          <h2 className="text-4xl font-bold text-gradient">Educational Background</h2>
-                          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                            My academic journey and continuous learning path 
+                          <h2 className="text-4xl font-bold text-gradient uppercase tracking-tight">Educational Background</h2>
+                          <p className="text-sm text-muted-foreground max-w-2xl mx-auto font-mono uppercase tracking-widest">
+                            Academic trajectory and specialized certifications
                           </p>
                         </div>
                         
                         <div className="grid grid-cols-1 gap-8 max-w-4xl mx-auto">
-                          {education.map((edu, index) => (
-                            <div key={index} className="animate-fade-in" style={{ animationDelay: `${index * 0.2}s` }}>
+                          {dbEducation.map((edu, index) => (
+                            <div key={edu.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                               <EducationCard
                                 degree={edu.degree}
                                 institution={edu.institution}
                                 year={edu.year}
-                                location={edu.location}
-                                description={edu.description}
-                                gpa={edu.gpa}
-                                status={edu.status}
+                                location={edu.location || ""}
+                                description={edu.description || ""}
+                                gpa={edu.gpa || ""}
+                                status={edu.status || ""}
                                 achievements={edu.achievements}
-                                link={edu.link}
+                                link={edu.link || ""}
                               />
                             </div>
                           ))}
+                          {dbEducation.length === 0 && (
+                            <div className="text-center py-20 border border-white/5 rounded-3xl">
+                              <p className="text-muted-foreground font-mono uppercase tracking-widest text-xs">No academic records retrieved.</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </TabsContent>
