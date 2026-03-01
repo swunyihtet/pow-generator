@@ -63,6 +63,33 @@ const Index = () => {
     );
   }
 
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-[#000a12] flex flex-col items-center justify-center p-4 text-center">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md space-y-6"
+        >
+          <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto border border-primary/20">
+            <Users className="h-10 w-10 text-primary" />
+          </div>
+          <h1 className="text-3xl font-black text-gradient uppercase tracking-tighter">Identity Not Found</h1>
+          <p className="text-muted-foreground font-mono text-sm leading-relaxed">
+            The profile <span className="text-primary">{username}</span> has not been initialized in our neural archives.
+          </p>
+          <Button 
+            onClick={() => navigate("/")}
+            variant="outline"
+            className="border-primary/50 text-primary hover:bg-primary/10 uppercase tracking-widest text-xs font-bold px-8 h-12 rounded-xl"
+          >
+            Return to Discovery Nexus
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
   const handleHireMe = () => {
     setActiveTab("contact");
   };
