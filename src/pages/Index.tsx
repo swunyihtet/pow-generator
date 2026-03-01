@@ -49,6 +49,40 @@ const Index = () => {
 
   const isOverclockDefault = profile?.theme_config?.overclock === true;
 
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+
+    try {
+      setIsSubmitting(true);
+      const { error } = await supabase
+        .from("portfolio_1")
+        .insert({
+          user_id: profile.id,
+          name: contactForm.name,
+          email: contactForm.email,
+          message: contactForm.message,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Transmission Received",
+        description: "Your message has been securely stored in the nexus.",
+      });
+      setContactForm({ name: "", email: "", message: "" });
+    } catch (error: any) {
+      toast({
+        title: "Link Failure",
+        description: "Failed to transmit packet: " + error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (profileLoading) {
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center space-y-6">
