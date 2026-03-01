@@ -76,9 +76,9 @@ const DiscoveryNexus = () => {
             Initialize Admin
           </Button>
           <Button 
-            variant="outline"
+            variant="outline" 
             size="lg"
-            onClick={() => window.open('https://github.com/swunyihtet/proof-of-work', '_blank')}
+            onClick={() => window.open('https://github.com/swunyihtet/pow-generator', '_blank')}
             className="w-full sm:w-auto h-16 px-10 border-white/10 hover:border-primary/50 bg-white/5 hover:bg-primary/5 font-bold uppercase tracking-[0.2em] rounded-2xl"
           >
             <Github className="mr-3 h-5 w-5" />
