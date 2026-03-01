@@ -13,6 +13,7 @@ const DiscoveryNexus = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    document.title = "Proof of Work | Identity Engine";
     const fetchRecentProfiles = async () => {
       const { data, error } = await supabase
         .from("profiles")
