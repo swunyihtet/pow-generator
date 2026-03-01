@@ -150,6 +150,7 @@ const ProfileEditor = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
+          username: profile.username,
           full_name: profile.full_name,
           title: profile.title,
           tagline: profile.tagline,
@@ -274,6 +275,15 @@ const ProfileEditor = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Nexus Username (Public URL)</Label>
+              <Input 
+                value={profile.username || ""} 
+                onChange={(e) => setProfile({...profile, username: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '')})}
+                placeholder="swunyihtet"
+                className="bg-white/5 border-white/10 focus:border-primary/50 h-11 rounded-xl font-mono text-primary"
+              />
+            </div>
+            <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Full Name</Label>
               <Input 
                 value={profile.full_name || ""} 
@@ -282,6 +292,9 @@ const ProfileEditor = () => {
                 className="bg-white/5 border-white/10 focus:border-primary/50 h-11 rounded-xl"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Title / Role</Label>
               <Input 
@@ -291,16 +304,15 @@ const ProfileEditor = () => {
                 className="bg-white/5 border-white/10 focus:border-primary/50 h-11 rounded-xl"
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Mission Tagline</Label>
-            <Input 
-              value={profile.tagline || ""} 
-              onChange={(e) => setProfile({...profile, tagline: e.target.value})}
-              placeholder="Engineering the future of decentralized intelligence."
-              className="bg-white/5 border-white/10 focus:border-primary/50 h-11 rounded-xl"
-            />
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Mission Tagline</Label>
+              <Input 
+                value={profile.tagline || ""} 
+                onChange={(e) => setProfile({...profile, tagline: e.target.value})}
+                placeholder="Engineering the future of decentralized intelligence."
+                className="bg-white/5 border-white/10 focus:border-primary/50 h-11 rounded-xl"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
