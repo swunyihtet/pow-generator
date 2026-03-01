@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { User, Briefcase, Globe, Twitter, Linkedin, Github, Save, Loader2, Upload, FileText, Image as ImageIcon } from "lucide-react";
 
@@ -23,7 +24,12 @@ interface Profile {
 const ProfileEditor = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCV, setUploadingCV] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
+  
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const cvInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -75,6 +81,66 @@ const ProfileEditor = () => {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cv') => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file || !profile) return;
+
+      // Validation
+      if (type === 'avatar') {
+        if (!file.type.startsWith('image/')) {
+          toast.error("Invalid file type", { description: "Please upload an image for your avatar." });
+          return;
+        }
+        setUploadingAvatar(true);
+      } else {
+        if (file.type !== 'application/pdf' && !file.type.includes('msword') && !file.type.includes('officedocument')) {
+          toast.error("Invalid file type", { description: "Please upload a PDF or document for your CV." });
+          return;
+        }
+        setUploadingCV(true);
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${type}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('portfolio-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('portfolio-assets')
+        .getPublicUrl(filePath);
+
+      setProfile({
+        ...profile,
+        [type === 'avatar' ? 'avatar_url' : 'cv_url']: publicUrl
+      });
+
+      toast.success(`${type === 'avatar' ? 'Avatar' : 'CV'} uploaded`, { 
+        description: "File successfully stored in your neural storage." 
+      });
+
+    } catch (error: any) {
+      toast.error("Upload failed", { 
+        description: error.message.includes('bucket not found') 
+          ? "Storage system offline. Please contact administrator." 
+          : error.message 
+      });
+    } finally {
+      setUploadingAvatar(false);
+      setUploadingCV(false);
+      // Reset input
+      if (event.target) event.target.value = '';
+    }
+  };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
@@ -91,6 +157,7 @@ const ProfileEditor = () => {
           social_links: profile.social_links,
           avatar_url: profile.avatar_url,
           cv_url: profile.cv_url,
+          theme_config: profile.theme_config,
           updated_at: new Date().toISOString()
         })
         .eq("id", profile.id);
@@ -142,7 +209,7 @@ const ProfileEditor = () => {
         <form onSubmit={handleUpdate} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Avatar URL</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Avatar Asset</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -153,10 +220,27 @@ const ProfileEditor = () => {
                     className="bg-white/5 border-white/10 focus:border-primary/50 pl-10 h-11 rounded-xl"
                   />
                 </div>
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  ref={avatarInputRef} 
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, 'avatar')}
+                />
+                <Button 
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 rounded-xl border-white/10 bg-white/5 hover:bg-primary/20 hover:border-primary/50 shrink-0"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                >
+                  {uploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Upload className="h-4 w-4 text-primary" />}
+                </Button>
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">CV / Resume URL</Label>
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">CV / Documentation</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -167,6 +251,23 @@ const ProfileEditor = () => {
                     className="bg-white/5 border-white/10 focus:border-primary/50 pl-10 h-11 rounded-xl"
                   />
                 </div>
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  ref={cvInputRef} 
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => handleFileUpload(e, 'cv')}
+                />
+                <Button 
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 rounded-xl border-white/10 bg-white/5 hover:bg-primary/20 hover:border-primary/50 shrink-0"
+                  onClick={() => cvInputRef.current?.click()}
+                  disabled={uploadingCV}
+                >
+                  {uploadingCV ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Upload className="h-4 w-4 text-primary" />}
+                </Button>
               </div>
             </div>
           </div>

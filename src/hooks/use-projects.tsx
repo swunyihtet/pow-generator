@@ -33,6 +33,9 @@ export function useProjects(userId?: string) {
         }
 
         const { data, error } = await query;
+
+        if (error) throw error;
+        setProjects(data || []);
       } catch (err: any) {
         console.error("Error fetching projects:", err);
         setError(err);

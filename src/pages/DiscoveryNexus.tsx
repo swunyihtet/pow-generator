@@ -1,13 +1,34 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Zap, Terminal, Sparkles, Github } from "lucide-react";
+import { ShieldCheck, Zap, Terminal, Sparkles, Github, Users, ArrowRight, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const DiscoveryNexus = () => {
   const navigate = useNavigate();
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecentProfiles = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, full_name, title, avatar_url")
+        .limit(3);
+      
+      if (!error && data) {
+        setProfiles(data);
+      }
+      setIsLoading(false);
+    };
+    fetchRecentProfiles();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden flex flex-col items-center justify-center p-6 pb-32">
       {/* Background Cyber-Grid */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="h-full w-full" style={{ 
@@ -81,6 +102,63 @@ const DiscoveryNexus = () => {
               <p className="text-[10px] font-mono text-muted-foreground uppercase">{feature.desc}</p>
             </div>
           ))}
+        </motion.div>
+
+        {/* Elite Roster Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.2, duration: 0.8 }}
+          className="pt-24 space-y-8"
+        >
+          <div className="flex items-center justify-center gap-4">
+            <div className="h-[1px] w-12 bg-white/10"></div>
+            <h3 className="text-xs font-black uppercase tracking-[0.4em] text-white/50 flex items-center gap-2">
+              <Users className="h-3 w-3" />
+              Recent Entities
+            </h3>
+            <div className="h-[1px] w-12 bg-white/10"></div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {isLoading ? (
+              <div className="col-span-3 py-12 flex justify-center">
+                <Loader2 className="h-6 w-6 text-primary animate-spin" />
+              </div>
+            ) : profiles.length > 0 ? (
+              profiles.map((profile, i) => (
+                <motion.div
+                  key={profile.username}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => navigate(`/${profile.username}`)}
+                  className="cursor-pointer"
+                >
+                  <Card className="bg-white/5 border-white/10 hover:border-primary/50 transition-all group overflow-hidden">
+                    <CardContent className="p-6 text-center space-y-4">
+                      <div className="w-16 h-16 rounded-full overflow-hidden mx-auto border-2 border-white/10 group-hover:border-primary/50 transition-colors">
+                        <img 
+                          src={profile.avatar_url || "/placeholder.svg"} 
+                          alt={profile.full_name}
+                          className="w-full h-full object-cover grayscale group-hover:grayscale-0"
+                        />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold uppercase tracking-tight">{profile.full_name || profile.username}</h4>
+                        <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest truncate">{profile.title || "Nexus Entity"}</p>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 text-[8px] font-black uppercase tracking-widest group-hover:text-primary">
+                        View Dossier <ArrowRight className="ml-1 h-2 w-2" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-3 py-12 text-center text-xs font-mono text-muted-foreground">
+                NO RECENT ACTIVITY DETECTED IN THIS SECTOR.
+              </div>
+            )}
+          </div>
         </motion.div>
       </div>
 
